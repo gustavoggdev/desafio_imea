@@ -2,6 +2,9 @@ import pandas as pd
 import asyncio
 from pyppeteer import launch
 import time
+import requests
+import uuid
+import os
 
 url = "http://www.imea.com.br/imea-site/relatorios-mercado-detalhe?c=4&s=8"
 
@@ -11,20 +14,11 @@ async def main():
 
     await page.goto(url, {'waitUntil' : 'domcontentloaded'})
 
-    # Seta local padrão de download do navegador emulado
-    try:
-        await page._client.send('Page.setDownloadBehavior', {
-            'behavior': 'allow',
-            'downloadPath': '.\\arquivos_soja'
-        })
-    except:
-        print("Erro ao setar path de download do navegador")
-
-    # Indica tempo para esperar página carregar
+    # Indica tempo para esperar página carregar caso tenha conexões lentas
     time.sleep(10)
 
     # Executa comandos javascript para chegar até o link mais recente publicado
-    script = await page.evaluate('''() =>{
+    pathFile = await page.evaluate('''() =>{
 
         //document.getElementById("item-soja").click();
         var tabBox = document.getElementById("tab-box").children;
@@ -44,6 +38,19 @@ async def main():
     }
     ''')
 
-    print(script)
+    # Cria pasta caso não exista para os arquivos da soja
+    dir = './arquivos_soja'
+    os.makedirs(dir, exist_ok=True)
+
+    # Faz o download do conteudo
+    req = requests.get(pathFile['path']).content
+    
+    # Define um nome pro arquivo destino
+    fileName = f"{uuid.uuid1()}.pdf"
+
+    pathSave = f"{dir}/{fileName}"
+
+    # Salva arquivo local
+    open(pathSave, 'wb').write(req)
 
 asyncio.get_event_loop().run_until_complete(main())
