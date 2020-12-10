@@ -4,6 +4,7 @@ from recent_file import getLastCreatedFile
 import pandas as pd
 
 recent_file = getLastCreatedFile('./arquivos_soja')
+print(f"Arquivo Lido: {recent_file}")
 
 # Salva a tabela do PDF em CSV para ser lido pelo Pandas
 tabula.convert_into(recent_file, "output.csv", output_format="csv", pages='all')
@@ -13,7 +14,7 @@ df = pd.read_csv('output.csv', sep=',', encoding="ISO-8859-1")
 def centroSul(column):
     porcent = str(column).strip().split(' ')
     if len(porcent) >= 2:
-        return porcent[1]
+        return porcent[len(porcent) - 1]
     else:
         return 0
 
@@ -21,10 +22,18 @@ def weekColumn(column):
     week = str(column).strip().split(' ')[0]
     return week
 
-# Por conta das colunas 'Regiões IMEA' e 'Centro-Sul' ficarem juntas, foram criadas duas funções para dar split
-df['Centro Sul'] = df[['Regiões do IMEA Centro-Sul']].applymap(centroSul)
+columnsCount = len(df.columns)
+print(f"Qtde. Colunas: {columnsCount}")
 
-df['Periodo'] = df[['Regiões do IMEA Centro-Sul']].applymap(weekColumn)
+# O padrão das ultimas duas safras são sempre 9 colunas
+# Caso tenha 8, é que a primeira e a segunda coluna foram unidaas (cabeçalho e valor)
+# Então, se for 8, aplica a função centroSul() para dividir e aplicar os valores para o Centro Sul (2ª coluna)
+if columnsCount == 8:
+    df['Centro-Sul'] = df[[df.columns[0]]].applymap(centroSul)
+    df.head()
+
+# Divide os valores da primeira coluna, caso não esteja juntas, não retorna erro pois retorna a primeira posição do SPLIT
+df['Periodo'] = df[[df.columns[0]]].applymap(weekColumn)
 
 def day(column):
     day = str(column).strip().split('-')
@@ -53,25 +62,24 @@ def year(column):
 
 df['Ano'] = df[['Periodo']].applymap(year)
 
-# Atribui a um novo DF os dados com os tipos de dados convertidos conforme interpretação do Pandas
-# Isso ajuda a categorizar os dados Nulos, NaN, None etc
+# Força o Pandas a tentar reconhecer os tipos das colunas
 df_final = df.convert_dtypes()
 
-# Elimina as linhas onde Dia, Mes e Ano foram atribuidos None pelas funções
+# Elimina do DataFrame quando as colunas Dia, Mes e Ano sejam Nulas
+# Esses valores Nulos são atribuidos na função pelo ApplyMap
 df_final = df_final[df_final['Dia'].notna()]
 df_final = df_final[df_final['Mes'].notna()]
 df_final = df_final[df_final['Ano'].notna()]
 
-# Elimina colunas que tenham todos os dados NaN ou Nulos
+# Elimina todas as colunas do DF caso todos os valores da coluna sejam Nulos (NaN)
 df_final = df_final.dropna(axis=1, how='all')
 
-# Cria função para retirar o '%' dos numeros e trocar , por .
 def convertNum(column):
-    num = column.replace('%', '')
+    num = str(column).replace('%', '')
     num = num.replace(',', '.')
     return num
 
-# Aplica a função acima nas colunas que devem ser numéricas
+# Aplica a função convertNum() nas colunas númericas para retirar simbolo de % e trocar . por ,
 df_final['Médio-Norte'] = df_final[['Médio-Norte']].applymap(convertNum)
 df_final['Nordeste'] = df_final[['Nordeste']].applymap(convertNum)
 df_final['Noroeste'] = df_final[['Noroeste']].applymap(convertNum)
@@ -79,35 +87,42 @@ df_final['Norte'] = df_final[['Norte']].applymap(convertNum)
 df_final['Oeste'] = df_final[['Oeste']].applymap(convertNum)
 df_final['Sudeste'] = df_final[['Sudeste']].applymap(convertNum)
 df_final['Mato Grosso'] = df_final[['Mato Grosso']].applymap(convertNum)
-df_final['Centro Sul'] = df_final[['Centro Sul']].applymap(convertNum)
+df_final['Centro-Sul'] = df_final[['Centro-Sul']].applymap(convertNum)
 
-# Converte o tipo novamente para o Pandas tentar interpretar essas colunas como núméricas
+# Após aplicarem essas mudanças, força novamente atribuir os tipos
 df_final = df_final.convert_dtypes()
 
-# Salvar o Df tratado em csv
-df_final.to_csv('trasnform.csv', sep=';', mode='w', decimal='.')
+# Cria uma coluna Arquivo para ter o valor de qual arquivo foi lido para ter aquele registro
+df_final['Arquivo'] = recent_file
 
-# Cria conexão com o SQL Server local
-import pyodbc
-import sqlalchemy
-engine = sqlalchemy.create_engine(
-    "mssql+pyodbc://@INT-TI01\\SQLEXPRESS/db_imea?Integrated Security=SSPI;driver=ODBC+Driver+17+for+SQL+Server"
-)
+meses = {
+    "jan": "01",
+    "fev": "02",
+    "mar": "03",
+    "abr": "04",
+    "mai": "05",
+    "jun": "06",
+    "jul": "07",
+    "ago": "08",
+    "set": "09",
+    "out": "10",
+    "nov": "11",
+    "dez": "12"
+}
 
-'''engine = sqlalchemy.create_engine(
-    "postgresql+pg8000://postgres:root@localhost/imea"
-)'''
+def monthNumber(column):
+    return meses[column]
 
-# Append na tabela soja do banco de dados com o dataframe
-df_final[[
-    'Médio-Norte', 
-    'Nordeste', 
-    'Noroeste',
-    'Norte', 
-    'Oeste', 
-    'Sudeste', 
-    'Mato Grosso', 
-    'Centro Sul', 
-    'Periodo',
-    'Dia', 'Mes', 'Ano'
-]].to_sql('soja', con=engine, if_exists='append', index=False)
+# Função para atribuir o número do mes conforme o valor da coluna Mes
+df_final["NrMes"] = df_final[["Mes"]].applymap(monthNumber)
+
+# Renomeia as colunas para ter um padrão
+df_final.rename(columns={
+    "Médio-Norte": "Medio_Norte",
+    "Mato Grosso": "Mato_Grosso",
+    "Centro-Sul": "Centro_Sul"
+}, inplace=True)
+
+# Salva os registros lidos e tratados em CSV para ser usado no load.py
+# Caso já exista o arquivo, será apagado os registros e inseridos somente dessa leitura
+df_final.to_csv('transform.csv', sep=';', mode='w', decimal='.')
