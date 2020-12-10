@@ -11,6 +11,9 @@ tabula.convert_into(recent_file, "output.csv", output_format="csv", pages='all')
 
 df = pd.read_csv('output.csv', sep=',', encoding="ISO-8859-1")
 
+# Elimina todas as colunas do DF caso todos os valores da coluna sejam Nulos (NaN)
+df = df.dropna(axis=1, how='all')
+
 def centroSul(column):
     porcent = str(column).strip().split(' ')
     if len(porcent) >= 2:
@@ -31,6 +34,8 @@ print(f"Qtde. Colunas: {columnsCount}")
 if columnsCount == 8:
     df['Centro-Sul'] = df[[df.columns[0]]].applymap(centroSul)
     df.head()
+
+print(f"Colunas: {df.columns}")
 
 # Divide os valores da primeira coluna, caso não esteja juntas, não retorna erro pois retorna a primeira posição do SPLIT
 df['Periodo'] = df[[df.columns[0]]].applymap(weekColumn)
@@ -70,9 +75,6 @@ df_final = df.convert_dtypes()
 df_final = df_final[df_final['Dia'].notna()]
 df_final = df_final[df_final['Mes'].notna()]
 df_final = df_final[df_final['Ano'].notna()]
-
-# Elimina todas as colunas do DF caso todos os valores da coluna sejam Nulos (NaN)
-df_final = df_final.dropna(axis=1, how='all')
 
 def convertNum(column):
     num = str(column).replace('%', '')
