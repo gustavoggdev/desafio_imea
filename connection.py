@@ -6,8 +6,8 @@ from sqlalchemy import Table, Column, Integer, String, MetaData
 def conn():
     try:
 
-        strConn = "mssql+pyodbc://@DESKTOP-EF86IG0\\SQLEXPRESS/db_imea?Integrated Security=SSPI;driver=ODBC+Driver+17+for+SQL+Server"
-        #strConn = "mssql+pyodbc://@INT-TI01\\SQLEXPRESS/db_imea?Integrated Security=SSPI;driver=ODBC+Driver+17+for+SQL+Serve"
+        #strConn = "mssql+pyodbc://@DESKTOP-EF86IG0\\SQLEXPRESS/db_imea?Integrated Security=SSPI;driver=ODBC+Driver+17+for+SQL+Server"
+        strConn = "mssql+pyodbc://@INT-TI01\\SQLEXPRESS/db_imea?Integrated Security=SSPI;driver=ODBC+Driver+17+for+SQL+Server"
 
         engine = sqlalchemy.create_engine(strConn)
 
