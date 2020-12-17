@@ -11,7 +11,7 @@ while True:
     option = int(input("Digite o método de Donwload do arquivo\n[0] - URL web do arquivo\n[1] - Path local\n-> "))
     urlPath = input("Digite o path ou url do arquivo: ")
 
-    dir = './arquivos_soja/manual'
+    dir = './arquivos_soja_manual'
     os.makedirs(dir, exist_ok=True)
 
     fileName = ""
@@ -180,6 +180,9 @@ while True:
             "Regiões do IMEA": "Periodo"
         }, inplace=True)
 
+        # Renomeia as colunas para ficarem somente com letras minusculas
+        df_final.columns = df_final.columns.str.lower()
+
         # Salva os registros lidos e tratados em CSV para ser usado no load.py
         # Caso já exista o arquivo, será apagado os registros e inseridos somente dessa leitura
         df_final.to_csv('transform_manual.csv', sep=';', mode='w', decimal='.')
@@ -191,36 +194,34 @@ while True:
         if createTableSoja(engine):
 
             # Carrega os dados que já estão na tabela do BD
-            query = "SELECT * FROM dbo.soja s (NOLOCK) ORDER BY s.Ano, s.NrMes"
+            query = "select * from soja as s order by s.ano asc, s.nrmes"
             df_existents = pd.read_sql(sql=query, con=engine)
 
             # Carrega os dados do arquivo 'transform.csv' que foi gerado na transformação (transform.py)
             df_newRegisters = pd.read_csv('transform_manual.csv', sep=";")
 
             # Cria um dataframe fazendo o join entre os dois DFs
-            df_final = df_newRegisters.merge(df_existents, how='left', on=['Periodo'])
+            df_final = df_newRegisters.merge(df_existents, how='left', on=['periodo'])
 
             # Cria a lista 'novos_periodos' baseado do DF do JOIN filtrando o DF Right for nulo
             # Ou seja, trazendo registos que ainda não existem no BD
             # Salva os valores da coluna Periodo na variavel
-            novos_periodos = df_final["Periodo"].loc[
-                df_final["Ano_y"].notna() == False
+            novos_periodos = df_final["periodo"].loc[
+                df_final["ano_y"].notna() == False
             ].to_list()
 
             # Filtra os novos registros somente com o periodo da variavel acima (que ainda não existem no BD)
             df_newRegisters = df_newRegisters.loc[
-                df_newRegisters["Periodo"].isin(novos_periodos)
+                df_newRegisters["periodo"].isin(novos_periodos)
             ]
 
             # Se o DataFrame após filtro acima não for vazio, insere no BD
             if df_newRegisters.empty == False:
                 df_newRegisters[[
-                    'Medio_Norte', 'Nordeste', 'Noroeste',
-                    'Norte', 'Oeste', 'Sudeste', 'Mato_Grosso', 'Centro_Sul', 'Periodo',
-                    'Dia', 'Mes', 'NrMes', 'Ano', 'Arquivo'
+                    'medio_norte', 'nordeste', 'noroeste',
+                    'norte', 'oeste', 'sudeste', 'mato_grosso', 'centro_sul', 'periodo',
+                    'dia', 'mes', 'nrmes', 'ano', 'arquivo'
                 ]].to_sql('soja', con=engine, if_exists='append', index=False)
-
-            print("Carregamento para DW Finalizado!")
         else:
             print("Não foi possível localizar ou criar a tabela no DW.")
     else:
