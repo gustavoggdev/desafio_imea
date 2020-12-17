@@ -143,6 +143,9 @@ df_final.rename(columns={
     "Regiões do IMEA": "Periodo"
 }, inplace=True)
 
+# Renomeia as colunas para ficarem somente com letras minusculas
+df_final.columns = df_final.columns.str.lower()
+
 # Salva os registros lidos e tratados em CSV para ser usado no load.py
 # Caso já exista o arquivo, será apagado os registros e inseridos somente dessa leitura
 df_final.to_csv('transform.csv', sep=';', mode='w', decimal='.')

@@ -7,8 +7,8 @@ def conn():
     try:
 
         #strConn = "mssql+pyodbc://@DESKTOP-EF86IG0\\SQLEXPRESS/db_imea?Integrated Security=SSPI;driver=ODBC+Driver+17+for+SQL+Server"
-        strConn = "mssql+pyodbc://@INT-TI01\\SQLEXPRESS/db_imea?Integrated Security=SSPI;driver=ODBC+Driver+17+for+SQL+Server"
-
+        #strConn = "mssql+pyodbc://@INT-TI01\\SQLEXPRESS/db_imea?Integrated Security=SSPI;driver=ODBC+Driver+17+for+SQL+Server"
+        strConn = "postgresql+psycopg2://postgres:root@localhost:5432/imea"
         engine = sqlalchemy.create_engine(strConn)
 
         return engine
@@ -24,20 +24,20 @@ def createTableSoja(engine):
 
             soja = Table(
                 'soja', meta,
-                Column('Medio_Norte', String),
-                Column('Nordeste', String),
-                Column('Noroeste', String),
-                Column('Norte', String),
-                Column('Oeste', String),
-                Column('Sudeste', String),
-                Column('Mato_Grosso', String),
-                Column('Centro_Sul', String),
-                Column('Periodo', String),
-                Column('Dia', String),
-                Column('Mes', String),
-                Column('NrMes', String),
-                Column('Ano', String),
-                Column('Arquivo', String)
+                Column('medio_norte', String),
+                Column('nordeste', String),
+                Column('noroeste', String),
+                Column('norte', String),
+                Column('oeste', String),
+                Column('sudeste', String),
+                Column('mato_grosso', String),
+                Column('centro_sul', String),
+                Column('periodo', String),
+                Column('dia', String),
+                Column('mes', String),
+                Column('nrmes', String),
+                Column('ano', String),
+                Column('arquivo', String)
             )
 
             meta.create_all(engine)
